@@ -58,7 +58,7 @@ export default function InspectionTab({ rows, inspToggles, setInspToggles }) {
                   <td style={{ ...tdStyle, color: 'var(--red)',    textAlign: 'center' }}>{r.repair > 0 ? r.repair : '—'}</td>
                   <td style={{ ...tdStyle, color: 'var(--orange)', textAlign: 'center' }}>{r.locked > 0 ? r.locked : '—'}</td>
                   <td style={tdStyle}>
-                    {r.insp > 0 ? (
+                    {(r.insp > 0 || r.repair > 0) ? (
                       <button
                         onClick={() => setInspToggles(p => ({ ...p, [key]: !p[key] }))}
                         style={{
@@ -96,7 +96,7 @@ export default function InspectionTab({ rows, inspToggles, setInspToggles }) {
             <div key={`${r.sku}_${r.loc}`} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6, fontSize: 14 }}>
               <span style={{ color: 'var(--green)', fontWeight: 700 }}>{r.sku}</span>
               <LocBadge loc={r.loc} />
-              <span style={{ color: 'var(--text-dim)' }}>+{r.insp} units added across all date windows</span>
+              <span style={{ color: 'var(--text-dim)' }}>+{(r.insp || 0) + (r.repair || 0)} units added across all date windows</span>
             </div>
           ))}
         </div>

@@ -7,7 +7,7 @@ export function locPriority(loc) {
 
 export function buildEffectiveRows(rawRows, inspToggles, dateColKeys) {
   return rawRows.map(r => {
-    const add = (inspToggles[`${r.sku}_${r.loc}`] && r.insp > 0) ? r.insp : 0
+    const add = inspToggles[`${r.sku}_${r.loc}`] ? (r.insp || 0) + (r.repair || 0) : 0
     const ea  = {}
     for (const k of dateColKeys) ea[k] = (r.avail[k] ?? 0) + add
     return { ...r, effectiveAvail: ea }
