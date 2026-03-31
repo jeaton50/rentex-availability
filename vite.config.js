@@ -1,8 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Replace 'rentex-analyzer' with your actual GitHub repo name
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
-  base: '/rentex-availability/',
-})
+  base: command === 'build' ? '/rentex-availability/' : '/',
+}))

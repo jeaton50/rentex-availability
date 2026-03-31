@@ -102,6 +102,7 @@ export function parseRTProFile(file) {
           const own    = toInt(row[colIdx.own])
           const insp   = toInt(row[colIdx.insp])
           const locked = toInt(row[colIdx.locked])
+          const repair = toInt(row[colIdx.repair])
 
           if (!loc) continue
 
@@ -110,7 +111,7 @@ export function parseRTProFile(file) {
             avail[ci] = toInt(row[ci])
           }
 
-          rows.push({ sku, desc, loc, own, insp, locked, avail })
+          rows.push({ sku, desc, loc, own, insp, locked, repair, avail })
         }
 
         if (rows.length === 0) {

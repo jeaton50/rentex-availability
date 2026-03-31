@@ -1,24 +1,46 @@
 import { LocBadge, thStyle, tdStyle } from './components.jsx'
 
 export default function InspectionTab({ rows, inspToggles, setInspToggles }) {
-  const inspItems = rows.filter(r => r.insp > 0 || r.locked > 0)
+  const inspItems = rows.filter(r => r.insp > 0 || r.locked > 0 || r.repair > 0)
   const anyOn     = Object.values(inspToggles).some(Boolean)
 
+  const totalInsp   = inspItems.reduce((a, r) => a + r.insp,   0)
+  const totalRepair = inspItems.reduce((a, r) => a + r.repair, 0)
+  const totalLocked = inspItems.reduce((a, r) => a + r.locked, 0)
+
   if (inspItems.length === 0) {
-    return <div style={{ color: 'var(--text-dim)', fontSize: 12 }}>No items currently in inspection or locked.</div>
+    return <div style={{ color: 'var(--text-dim)', fontSize: 12 }}>No items currently in inspection, repair, or locked.</div>
   }
 
   return (
     <div className="fade-in">
-      <div style={{ color: 'var(--text-faint)', fontSize: 10, letterSpacing: 2, marginBottom: 14 }}>
-        UNITS IN INSPECTION OR LOCKED ATTACH — TOGGLE TO ADD TO AVAILABILITY
+      <div style={{ color: 'var(--text-faint)', fontSize: 10, letterSpacing: 2, marginBottom: 10 }}>
+        UNITS IN INSPECTION, REPAIR, OR LOCKED ATTACH — TOGGLE TO ADD TO AVAILABILITY
+      </div>
+
+      {/* Summary counts */}
+      <div style={{ display: 'flex', gap: 24, marginBottom: 16, flexWrap: 'wrap' }}>
+        {[
+          { label: 'In Inspection', value: totalInsp,   color: 'var(--yellow)' },
+          { label: 'In Repair',     value: totalRepair, color: 'var(--red)'    },
+          { label: 'Locked Attach', value: totalLocked, color: 'var(--orange)' },
+        ].map(s => (
+          <div key={s.label} style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
+            <span style={{ color: s.color, fontSize: 22, fontWeight: 700, lineHeight: 1, fontFamily: 'var(--display)' }}>
+              {s.value}
+            </span>
+            <span style={{ color: 'var(--text-faint)', fontSize: 10, letterSpacing: 1 }}>
+              {s.label.toUpperCase()}
+            </span>
+          </div>
+        ))}
       </div>
 
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['SKU', 'Description', 'Location', 'In Inspection', 'Locked Attach.', 'Include?'].map(h => (
+              {['SKU', 'Description', 'Location', 'In Inspection', 'In Repair', 'Locked Attach.', 'Include?'].map(h => (
                 <th key={h} style={thStyle}>{h}</th>
               ))}
             </tr>
@@ -32,7 +54,8 @@ export default function InspectionTab({ rows, inspToggles, setInspToggles }) {
                   <td style={{ ...tdStyle, color: 'var(--yellow)', fontWeight: 700 }}>{r.sku}</td>
                   <td style={{ ...tdStyle, color: '#888' }}>{r.desc}</td>
                   <td style={tdStyle}><LocBadge loc={r.loc} /></td>
-                  <td style={{ ...tdStyle, color: 'var(--yellow)', textAlign: 'center' }}>{r.insp > 0 ? r.insp : '—'}</td>
+                  <td style={{ ...tdStyle, color: 'var(--yellow)', textAlign: 'center' }}>{r.insp   > 0 ? r.insp   : '—'}</td>
+                  <td style={{ ...tdStyle, color: 'var(--red)',    textAlign: 'center' }}>{r.repair > 0 ? r.repair : '—'}</td>
                   <td style={{ ...tdStyle, color: 'var(--orange)', textAlign: 'center' }}>{r.locked > 0 ? r.locked : '—'}</td>
                   <td style={tdStyle}>
                     {r.insp > 0 ? (
@@ -51,7 +74,7 @@ export default function InspectionTab({ rows, inspToggles, setInspToggles }) {
                         {on ? '✓ INCLUDED' : 'EXCLUDED'}
                       </button>
                     ) : (
-                      <span style={{ color: '#333', fontSize: 10 }}>locked only</span>
+                      <span style={{ color: '#333', fontSize: 10 }}>—</span>
                     )}
                   </td>
                 </tr>
