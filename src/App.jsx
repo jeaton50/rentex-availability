@@ -87,6 +87,11 @@ export default function App() {
   const totalInsp       = parsed.rows.reduce((a, r) => a + (r.insp   || 0), 0)
   const totalRepair     = parsed.rows.reduce((a, r) => a + (r.repair || 0), 0)
   const totalRentableCleared = parsed.rows.reduce((a, r) => a + Math.max(0, r.own - (r.locked || 0)), 0)
+  const firstDate       = dateColKeys[0]
+  const totalBooked     = parsed.rows.reduce((a, r) => {
+    const avail = r.avail[firstDate] ?? 0
+    return a + Math.max(0, r.own - (r.locked || 0) - (r.insp || 0) - (r.repair || 0) - Math.max(0, avail))
+  }, 0)
 
   return (
     <div style={{ fontFamily: 'var(--mono)', background: 'var(--bg)', minHeight: '100vh', color: 'var(--text)' }}>
@@ -129,6 +134,7 @@ export default function App() {
             { label: 'In Inspection',   value: totalInsp,             color: 'var(--yellow)' },
             { label: 'In Repair',       value: totalRepair,           color: '#ff4444'       },
             { label: 'Open If Cleared', value: totalRentableCleared,  color: 'var(--green)'  },
+            { label: 'Booked',          value: totalBooked,           color: 'var(--blue)'   },
           ].map(s => (
             <div key={s.label} style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
               <span style={{ color: s.color, fontSize: 22, fontWeight: 700, lineHeight: 1, fontFamily: 'var(--display)' }}>
