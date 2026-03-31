@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react'
 import { buildEffectiveRows, computePlansForDate, buildNetworkOverview } from './logic.js'
 import { MiniBtn } from './components.jsx'
-import UploadScreen  from './UploadScreen.jsx'
-import ShortagesTab  from './ShortagesTab.jsx'
-import NetworkTab    from './NetworkTab.jsx'
-import InspectionTab from './InspectionTab.jsx'
+import UploadScreen   from './UploadScreen.jsx'
+import ShortagesTab   from './ShortagesTab.jsx'
+import NetworkTab     from './NetworkTab.jsx'
+import InspectionTab  from './InspectionTab.jsx'
+import LocationsTab   from './LocationsTab.jsx'
 
-const TABS = ['Shortages & Transfers', 'Network Overview', 'Inspection']
+const TABS = ['Shortages & Transfers', 'Network Overview', 'Inspection', 'Locations']
 
 export default function App() {
   // ── file / parse state ────────────────────────────────────────────────────
@@ -84,8 +85,13 @@ export default function App() {
   const totalShortages  = worstCasePlans.length
   const totalUnits      = worstCasePlans.reduce((a, p) => a + p.shortage, 0)
   const totalStillShort = worstCasePlans.reduce((a, p) => a + p.stillShort, 0)
-  const totalInsp       = parsed.rows.reduce((a, r) => a + (r.insp   || 0), 0)
-  const totalRepair     = parsed.rows.reduce((a, r) => a + (r.repair || 0), 0)
+  const totalOwned      = parsed.rows.reduce((a, r) => a + (r.own        || 0), 0)
+  const totalInsp       = parsed.rows.reduce((a, r) => a + (r.insp       || 0), 0)
+  const totalRepair     = parsed.rows.reduce((a, r) => a + (r.repair     || 0), 0)
+  const totalLocked     = parsed.rows.reduce((a, r) => a + (r.locked     || 0), 0)
+  const totalQuarantined= parsed.rows.reduce((a, r) => a + (r.quarantined|| 0), 0)
+  const totalLateReturn = parsed.rows.reduce((a, r) => a + (r.lateReturn || 0), 0)
+  const totalLocations  = new Set(parsed.rows.map(r => r.loc)).size
   const totalRentableCleared = parsed.rows.reduce((a, r) => a + Math.max(0, r.own - (r.locked || 0)), 0)
   const firstDate       = dateColKeys[0]
   const totalBooked     = parsed.rows.reduce((a, r) => {
@@ -127,14 +133,18 @@ export default function App() {
         {/* Stat bar */}
         <div style={{ display: 'flex', gap: 28, marginTop: 12, flexWrap: 'wrap' }}>
           {[
-            { label: 'Selected Dates',  value: selectedDates.size, color: 'var(--blue)'   },
-            { label: 'Shortage Events', value: totalShortages,     color: 'var(--accent)' },
-            { label: 'Units Short',     value: totalUnits,         color: 'var(--red)'    },
-            { label: 'Unresolvable',    value: totalStillShort,    color: 'var(--orange)' },
+            { label: 'Total Owned',     value: totalOwned,            color: '#ccc'          },
+            { label: 'Locations',       value: totalLocations,        color: 'var(--blue)'   },
+            { label: 'Shortage Events', value: totalShortages,        color: 'var(--accent)' },
+            { label: 'Units Short',     value: totalUnits,            color: 'var(--red)'    },
+            { label: 'Unresolvable',    value: totalStillShort,       color: 'var(--orange)' },
+            { label: 'Booked',          value: totalBooked,           color: 'var(--blue)'   },
             { label: 'In Inspection',   value: totalInsp,             color: 'var(--yellow)' },
             { label: 'In Repair',       value: totalRepair,           color: '#ff4444'       },
+            { label: 'Quarantined',     value: totalQuarantined,      color: '#aa44ff'       },
+            { label: 'Late Return',     value: totalLateReturn,       color: 'var(--orange)' },
+            { label: 'Locked',          value: totalLocked,           color: '#ff9944'       },
             { label: 'Open If Cleared', value: totalRentableCleared,  color: 'var(--green)'  },
-            { label: 'Booked',          value: totalBooked,           color: 'var(--blue)'   },
           ].map(s => (
             <div key={s.label} style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
               <span style={{ color: s.color, fontSize: 22, fontWeight: 700, lineHeight: 1, fontFamily: 'var(--display)' }}>
@@ -229,6 +239,12 @@ export default function App() {
             rows={parsed.rows}
             inspToggles={inspToggles}
             setInspToggles={setInspToggles}
+          />
+        )}
+        {activeTab === 3 && (
+          <LocationsTab
+            rows={parsed.rows}
+            firstDate={firstDate}
           />
         )}
       </main>

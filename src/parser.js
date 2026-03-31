@@ -46,9 +46,11 @@ export function parseRTProFile(file) {
           desc:   headers.findIndex(h => h.toLowerCase() === 'description'),
           loc:    headers.findIndex(h => h.toLowerCase() === 'location'),
           own:    headers.findIndex(h => h.toLowerCase() === 'total own'),
-          insp:   headers.findIndex(h => h.toLowerCase() === 'inspection'),
-          locked: headers.findIndex(h => h.toLowerCase() === 'locked attach.'),
-          repair: headers.findIndex(h => h.toLowerCase() === 'repair'),
+          insp:        headers.findIndex(h => h.toLowerCase() === 'inspection'),
+          locked:      headers.findIndex(h => h.toLowerCase() === 'locked attach.'),
+          repair:      headers.findIndex(h => h.toLowerCase() === 'repair'),
+          quarantined: headers.findIndex(h => h.toLowerCase() === 'quarantined'),
+          lateReturn:  headers.findIndex(h => h.toLowerCase() === 'late return'),
         }
 
         // Find the "Avail Today" column and all date columns after it
@@ -101,8 +103,10 @@ export function parseRTProFile(file) {
           const loc    = String(row[colIdx.loc]     ?? '').trim().toUpperCase()
           const own    = toInt(row[colIdx.own])
           const insp   = toInt(row[colIdx.insp])
-          const locked = toInt(row[colIdx.locked])
-          const repair = toInt(row[colIdx.repair])
+          const locked      = toInt(row[colIdx.locked])
+          const repair      = toInt(row[colIdx.repair])
+          const quarantined = toInt(row[colIdx.quarantined])
+          const lateReturn  = toInt(row[colIdx.lateReturn])
 
           if (!loc) continue
 
@@ -111,7 +115,7 @@ export function parseRTProFile(file) {
             avail[ci] = toInt(row[ci])
           }
 
-          rows.push({ sku, desc, loc, own, insp, locked, repair, avail })
+          rows.push({ sku, desc, loc, own, insp, locked, repair, quarantined, lateReturn, avail })
         }
 
         if (rows.length === 0) {
