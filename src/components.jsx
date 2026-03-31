@@ -4,9 +4,9 @@ export function LocBadge({ loc }) {
   const c = LOC_COLORS[loc] || '#888'
   return (
     <span style={{
-      background: c + '20', color: c, border: `1px solid ${c}40`,
-      padding: '2px 7px', borderRadius: 3,
-      fontSize: 10, letterSpacing: 1, fontWeight: 700, whiteSpace: 'nowrap',
+      background: c + '28', color: c, border: `1px solid ${c}55`,
+      padding: '3px 10px', borderRadius: 4,
+      fontSize: 13, letterSpacing: 1, fontWeight: 700, whiteSpace: 'nowrap',
     }}>
       {loc}
     </span>
@@ -15,9 +15,9 @@ export function LocBadge({ loc }) {
 
 export function SectionLabel({ label, color = 'var(--accent)' }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-      <div style={{ width: 3, height: 13, background: color, borderRadius: 2 }} />
-      <span style={{ color, fontSize: 10, letterSpacing: 3, fontWeight: 700 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+      <div style={{ width: 4, height: 16, background: color, borderRadius: 2 }} />
+      <span style={{ color, fontSize: 13, letterSpacing: 3, fontWeight: 700 }}>
         {label.toUpperCase()}
       </span>
     </div>
@@ -26,9 +26,9 @@ export function SectionLabel({ label, color = 'var(--accent)' }) {
 
 export function Pill({ label, value, color }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-      <span style={{ color, fontWeight: 700, fontSize: 14 }}>{value}</span>
-      <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+      <span style={{ color, fontWeight: 700, fontSize: 18 }}>{value}</span>
+      <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>{label}</span>
     </div>
   )
 }
@@ -36,8 +36,8 @@ export function Pill({ label, value, color }) {
 export function StatusBadge({ label, color }) {
   return (
     <span style={{
-      color, background: color + '18', border: `1px solid ${color}33`,
-      padding: '2px 9px', borderRadius: 2, fontSize: 10, fontWeight: 600,
+      color, background: color + '22', border: `1px solid ${color}44`,
+      padding: '4px 12px', borderRadius: 3, fontSize: 13, fontWeight: 600,
     }}>
       {label}
     </span>
@@ -47,9 +47,9 @@ export function StatusBadge({ label, color }) {
 export function MiniBtn({ onClick, color, children, style = {} }) {
   return (
     <button onClick={onClick} style={{
-      padding: '3px 10px', fontSize: 10, cursor: 'pointer',
-      borderRadius: 3, border: `1px solid ${color}44`,
-      background: `${color}18`, color,
+      padding: '5px 14px', fontSize: 13, cursor: 'pointer',
+      borderRadius: 4, border: `1px solid ${color}55`,
+      background: `${color}22`, color,
       fontFamily: 'var(--mono)', letterSpacing: 1,
       transition: 'all 0.12s', ...style,
     }}>
@@ -59,9 +59,9 @@ export function MiniBtn({ onClick, color, children, style = {} }) {
 }
 
 export const thStyle = {
-  textAlign: 'left', padding: '7px 10px',
-  color: 'var(--text-dim)', fontSize: 10,
+  textAlign: 'left', padding: '10px 14px',
+  color: 'var(--text-dim)', fontSize: 13,
   letterSpacing: 2, textTransform: 'uppercase',
   borderBottom: '1px solid var(--border)',
 }
-export const tdStyle = { padding: '7px 10px', color: '#999' }
+export const tdStyle = { padding: '10px 14px', color: '#c0c0d4', fontSize: 14 }

@@ -106,51 +106,51 @@ export default function App() {
       <header style={{
         background: 'linear-gradient(135deg, #0d1117, #161b22)',
         borderBottom: '1px solid #ff6b3540',
-        padding: '14px 24px',
+        padding: '18px 28px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'var(--display)', color: 'var(--accent)', fontSize: 18, fontWeight: 800, letterSpacing: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <span style={{ fontFamily: 'var(--display)', color: 'var(--accent)', fontSize: 26, fontWeight: 800, letterSpacing: 3 }}>
             RENTEX
           </span>
-          <span style={{ color: '#333' }}>//</span>
-          <span style={{ color: '#888', fontSize: 12, letterSpacing: 2 }}>Transfer Analyzer</span>
+          <span style={{ color: '#444' }}>//</span>
+          <span style={{ color: 'var(--text-dim)', fontSize: 16, letterSpacing: 2 }}>Transfer Analyzer</span>
 
           {/* File badge + swap button */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
             <span style={{
               background: '#1a2a1a', color: 'var(--green)',
-              border: '1px solid #2a3a2a', padding: '2px 10px',
-              borderRadius: 3, fontSize: 10, letterSpacing: 1,
+              border: '1px solid #2a3a2a', padding: '4px 12px',
+              borderRadius: 4, fontSize: 13, letterSpacing: 1,
             }}>
               📄 {fileName}
             </span>
-            <MiniBtn onClick={() => setParsed(null)} color="#666">
+            <MiniBtn onClick={() => setParsed(null)} color="#888">
               ↑ New File
             </MiniBtn>
           </div>
         </div>
 
         {/* Stat bar */}
-        <div style={{ display: 'flex', gap: 28, marginTop: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 32, marginTop: 16, flexWrap: 'wrap' }}>
           {[
-            { label: 'Total Owned',     value: totalOwned,            color: '#ccc'          },
+            { label: 'Total Owned',     value: totalOwned,            color: 'var(--text)'   },
             { label: 'Locations',       value: totalLocations,        color: 'var(--blue)'   },
             { label: 'Shortage Events', value: totalShortages,        color: 'var(--accent)' },
             { label: 'Units Short',     value: totalUnits,            color: 'var(--red)'    },
             { label: 'Unresolvable',    value: totalStillShort,       color: 'var(--orange)' },
             { label: 'Booked',          value: totalBooked,           color: 'var(--blue)'   },
             { label: 'In Inspection',   value: totalInsp,             color: 'var(--yellow)' },
-            { label: 'In Repair',       value: totalRepair,           color: '#ff4444'       },
-            { label: 'Quarantined',     value: totalQuarantined,      color: '#aa44ff'       },
+            { label: 'In Repair',       value: totalRepair,           color: 'var(--red)'    },
+            { label: 'Quarantined',     value: totalQuarantined,      color: '#bb66ff'       },
             { label: 'Late Return',     value: totalLateReturn,       color: 'var(--orange)' },
-            { label: 'Locked',          value: totalLocked,           color: '#ff9944'       },
+            { label: 'Locked',          value: totalLocked,           color: 'var(--orange)' },
             { label: 'Open If Cleared', value: totalRentableCleared,  color: 'var(--green)'  },
           ].map(s => (
-            <div key={s.label} style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
-              <span style={{ color: s.color, fontSize: 22, fontWeight: 700, lineHeight: 1, fontFamily: 'var(--display)' }}>
+            <div key={s.label} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ color: s.color, fontSize: 28, fontWeight: 700, lineHeight: 1, fontFamily: 'var(--display)' }}>
                 {s.value}
               </span>
-              <span style={{ color: 'var(--text-faint)', fontSize: 10, letterSpacing: 1 }}>
+              <span style={{ color: 'var(--text-faint)', fontSize: 13, letterSpacing: 1 }}>
                 {s.label.toUpperCase()}
               </span>
             </div>
@@ -159,32 +159,32 @@ export default function App() {
       </header>
 
       {/* ── DATE SELECTOR ── */}
-      <div style={{ background: 'var(--bg2)', borderBottom: '1px solid var(--border)', padding: '12px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ color: 'var(--text-faint)', fontSize: 10, letterSpacing: 2 }}>DATE WINDOWS</span>
+      <div style={{ background: 'var(--bg2)', borderBottom: '1px solid var(--border)', padding: '14px 28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+          <span style={{ color: 'var(--text-faint)', fontSize: 13, letterSpacing: 2 }}>DATE WINDOWS</span>
           <MiniBtn onClick={() => setSelectedDates(new Set(dateColKeys))} color="var(--blue)">Select All</MiniBtn>
-          <MiniBtn onClick={() => setSelectedDates(new Set([dateColKeys[0]]))} color="#666">Reset</MiniBtn>
+          <MiniBtn onClick={() => setSelectedDates(new Set([dateColKeys[0]]))} color="#888">Reset</MiniBtn>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {dateColKeys.map(k => {
             const sel      = selectedDates.has(k)
             const hasShort = (allPlans[k]?.length || 0) > 0
             return (
               <button key={k} onClick={() => toggleDate(k)} style={{
-                padding: '4px 9px', fontSize: 10, cursor: 'pointer', borderRadius: 3,
+                padding: '6px 12px', fontSize: 13, cursor: 'pointer', borderRadius: 4,
                 border: '1px solid',
-                borderColor: sel ? (hasShort ? 'var(--accent)' : 'var(--blue)') : hasShort ? '#4a2010' : 'var(--border)',
-                background:  sel ? (hasShort ? '#ff6b3520' : '#4db6ff18') : 'transparent',
-                color:       sel ? (hasShort ? '#ff9966'   : 'var(--blue)') : hasShort ? '#774433' : 'var(--text-dim)',
+                borderColor: sel ? (hasShort ? 'var(--accent)' : 'var(--blue)') : hasShort ? '#5a2818' : 'var(--border)',
+                background:  sel ? (hasShort ? '#ff6b3528' : '#4db6ff20') : 'transparent',
+                color:       sel ? (hasShort ? '#ffaa88'   : 'var(--blue)') : hasShort ? '#996644' : 'var(--text-dim)',
                 fontFamily: 'var(--mono)', fontWeight: sel ? 700 : 400,
                 transition: 'all 0.1s', position: 'relative',
               }}>
                 {dateCols[k] || k}
                 {hasShort && (
                   <span style={{
-                    position: 'absolute', top: 2, right: 2,
-                    width: 4, height: 4, borderRadius: '50%', background: 'var(--accent)',
+                    position: 'absolute', top: 3, right: 3,
+                    width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)',
                   }} />
                 )}
               </button>
@@ -192,10 +192,10 @@ export default function App() {
           })}
         </div>
 
-        <div style={{ marginTop: 6, color: '#2a2a3a', fontSize: 10 }}>
+        <div style={{ marginTop: 8, color: 'var(--text-faint)', fontSize: 13 }}>
           {sortedSelectedDates.map(k => dateCols[k] || k).join(' · ')}
           {'  ·  '}
-          <span style={{ color: '#4a2a1a' }}>● = shortage on that date</span>
+          <span style={{ color: 'var(--accent)', opacity: 0.5 }}>● = shortage on that date</span>
         </div>
       </div>
 
@@ -203,11 +203,11 @@ export default function App() {
       <nav style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--bg3)' }}>
         {TABS.map((t, i) => (
           <button key={t} onClick={() => setActiveTab(i)} style={{
-            padding: '10px 20px', fontSize: 10, letterSpacing: 2,
+            padding: '14px 24px', fontSize: 14, letterSpacing: 2,
             cursor: 'pointer', fontFamily: 'var(--mono)',
             background: 'transparent', border: 'none', fontWeight: activeTab === i ? 700 : 400,
-            borderBottom: `2px solid ${activeTab === i ? 'var(--accent)' : 'transparent'}`,
-            color: activeTab === i ? 'var(--accent)' : 'var(--text-faint)',
+            borderBottom: `3px solid ${activeTab === i ? 'var(--accent)' : 'transparent'}`,
+            color: activeTab === i ? 'var(--accent)' : 'var(--text-dim)',
             transition: 'all 0.12s',
           }}>
             {t.toUpperCase()}
@@ -216,7 +216,7 @@ export default function App() {
       </nav>
 
       {/* ── CONTENT ── */}
-      <main style={{ padding: '20px 24px', maxWidth: 1100 }}>
+      <main style={{ padding: '28px 32px', maxWidth: 1200 }}>
         {activeTab === 0 && (
           <ShortagesTab
             worstCasePlans={worstCasePlans}
@@ -250,11 +250,11 @@ export default function App() {
       </main>
 
       <footer style={{
-        padding: '14px 24px', borderTop: '1px solid var(--border)',
-        color: 'var(--text-faint)', fontSize: 10, letterSpacing: 1,
+        padding: '16px 28px', borderTop: '1px solid var(--border)',
+        color: 'var(--text-faint)', fontSize: 13, letterSpacing: 1,
         display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
       }}>
-        <span>RENTEX TRANSFER ANALYZER · DALLAS ORIGIN</span>
+        <span>RENTEX TRANSFER ANALYZER</span>
         <span>{parsed.rows.length} rows · {dateColKeys.length} date windows</span>
       </footer>
     </div>
