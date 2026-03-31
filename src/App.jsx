@@ -86,6 +86,9 @@ export default function App() {
   const totalStillShort = worstCasePlans.reduce((a, p) => a + p.stillShort, 0)
   const totalInsp       = parsed.rows.reduce((a, r) => a + (r.insp   || 0), 0)
   const totalRepair     = parsed.rows.reduce((a, r) => a + (r.repair || 0), 0)
+  const firstDate       = dateColKeys[0]
+  const totalCurrentAvail   = parsed.rows.reduce((a, r) => a + Math.max(0, r.avail[firstDate] ?? 0), 0)
+  const totalRentableCleared = totalCurrentAvail + totalInsp + totalRepair
 
   return (
     <div style={{ fontFamily: 'var(--mono)', background: 'var(--bg)', minHeight: '100vh', color: 'var(--text)' }}>
@@ -125,8 +128,9 @@ export default function App() {
             { label: 'Shortage Events', value: totalShortages,     color: 'var(--accent)' },
             { label: 'Units Short',     value: totalUnits,         color: 'var(--red)'    },
             { label: 'Unresolvable',    value: totalStillShort,    color: 'var(--orange)' },
-            { label: 'In Inspection',   value: totalInsp,          color: 'var(--yellow)' },
-            { label: 'In Repair',       value: totalRepair,        color: '#ff4444'       },
+            { label: 'In Inspection',   value: totalInsp,             color: 'var(--yellow)' },
+            { label: 'In Repair',       value: totalRepair,           color: '#ff4444'       },
+            { label: 'Open If Cleared', value: totalRentableCleared,  color: 'var(--green)'  },
           ].map(s => (
             <div key={s.label} style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
               <span style={{ color: s.color, fontSize: 22, fontWeight: 700, lineHeight: 1, fontFamily: 'var(--display)' }}>
