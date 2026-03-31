@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l src/*.js src/*.jsx)",
+      "Bash(find . -name *.yml -o -name *.yaml)"
+    ]
+  }
+}
