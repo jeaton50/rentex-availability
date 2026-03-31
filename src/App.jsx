@@ -86,9 +86,7 @@ export default function App() {
   const totalStillShort = worstCasePlans.reduce((a, p) => a + p.stillShort, 0)
   const totalInsp       = parsed.rows.reduce((a, r) => a + (r.insp   || 0), 0)
   const totalRepair     = parsed.rows.reduce((a, r) => a + (r.repair || 0), 0)
-  const firstDate       = dateColKeys[0]
-  const totalCurrentAvail   = parsed.rows.reduce((a, r) => a + Math.max(0, r.avail[firstDate] ?? 0), 0)
-  const totalRentableCleared = totalCurrentAvail + totalInsp + totalRepair
+  const totalRentableCleared = parsed.rows.reduce((a, r) => a + Math.max(0, r.own - (r.locked || 0)), 0)
 
   return (
     <div style={{ fontFamily: 'var(--mono)', background: 'var(--bg)', minHeight: '100vh', color: 'var(--text)' }}>
