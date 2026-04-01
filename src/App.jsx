@@ -18,6 +18,7 @@ export default function App() {
   const [selectedDates, setSelectedDates] = useState(new Set())
   const [inspToggles,   setInspToggles]   = useState({})
   const [activeTab,     setActiveTab]     = useState(0)
+  const [hoveredDate,   setHoveredDate]   = useState(null)
 
   // When a new file lands, reset everything and default-select first date
   const handleParsed = (result) => {
@@ -67,6 +68,26 @@ export default function App() {
     if (!parsed) return []
     return buildNetworkOverview(effectiveRows, allPlans, selectedDates)
   }, [effectiveRows, allPlans, selectedDates, parsed])
+
+  // poster breakdown per date: { [dateKey]: [{ sku, desc, avail }] }
+  const posterByDate = useMemo(() => {
+    if (!parsed) return {}
+    const posterRows = effectiveRows.filter(r => r.desc.toLowerCase().includes('poster'))
+    const skus = [...new Set(posterRows.map(r => r.sku))]
+    const result = {}
+    for (const dk of parsed.dateColKeys) {
+      result[dk] = skus.map(sku => {
+        const rows  = posterRows.filter(r => r.sku === sku)
+        const desc  = rows[0]?.desc || sku
+        const avail = rows.reduce((a, r) => a + (r.effectiveAvail[dk] ?? 0), 0)
+        const inUse = rows.reduce((a, r) => a + Math.max(0,
+          (r.own || 0) - (r.locked || 0) - (r.insp || 0) - (r.repair || 0) - Math.max(0, r.avail[dk] ?? 0)
+        ), 0)
+        return { sku, desc, avail, inUse }
+      })
+    }
+    return result
+  }, [effectiveRows, parsed])
 
   // ── helpers ───────────────────────────────────────────────────────────────
   const toggleDate = (k) => {
@@ -170,24 +191,79 @@ export default function App() {
           {dateColKeys.map(k => {
             const sel      = selectedDates.has(k)
             const hasShort = (allPlans[k]?.length || 0) > 0
+            const isHovered = hoveredDate === k
+            const posterItems = posterByDate[k] || []
+            const posterTotal = posterItems.reduce((a, r) => a + Math.max(0, r.avail), 0)
             return (
-              <button key={k} onClick={() => toggleDate(k)} style={{
-                padding: '6px 12px', fontSize: 13, cursor: 'pointer', borderRadius: 4,
-                border: '1px solid',
-                borderColor: sel ? (hasShort ? 'var(--accent)' : 'var(--blue)') : hasShort ? '#5a2818' : 'var(--border)',
-                background:  sel ? (hasShort ? '#ff6b3528' : '#4db6ff20') : 'transparent',
-                color:       sel ? (hasShort ? '#ffaa88'   : 'var(--blue)') : hasShort ? '#996644' : 'var(--text-dim)',
-                fontFamily: 'var(--mono)', fontWeight: sel ? 700 : 400,
-                transition: 'all 0.1s', position: 'relative',
-              }}>
-                {dateCols[k] || k}
-                {hasShort && (
-                  <span style={{
-                    position: 'absolute', top: 3, right: 3,
-                    width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)',
-                  }} />
+              <div key={k} style={{ position: 'relative' }}
+                onMouseEnter={() => setHoveredDate(k)}
+                onMouseLeave={() => setHoveredDate(null)}>
+                <button onClick={() => toggleDate(k)} style={{
+                  padding: '6px 12px', fontSize: 13, cursor: 'pointer', borderRadius: 4,
+                  border: '1px solid',
+                  borderColor: sel ? (hasShort ? 'var(--accent)' : 'var(--blue)') : hasShort ? '#5a2818' : 'var(--border)',
+                  background:  sel ? (hasShort ? '#ff6b3528' : '#4db6ff20') : 'transparent',
+                  color:       sel ? (hasShort ? '#ffaa88'   : 'var(--blue)') : hasShort ? '#996644' : 'var(--text-dim)',
+                  fontFamily: 'var(--mono)', fontWeight: sel ? 700 : 400,
+                  transition: 'all 0.1s', position: 'relative',
+                }}>
+                  {dateCols[k] || k}
+                  {hasShort && (
+                    <span style={{
+                      position: 'absolute', top: 3, right: 3,
+                      width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)',
+                    }} />
+                  )}
+                </button>
+
+                {isHovered && posterItems.length > 0 && (
+                  <div style={{
+                    position: 'absolute', bottom: 'calc(100% + 8px)', left: 0,
+                    background: '#0f1020', border: '1px solid var(--border2)',
+                    borderRadius: 5, padding: '10px 14px', minWidth: 220,
+                    zIndex: 100, boxShadow: '0 4px 20px #00000088',
+                    pointerEvents: 'none',
+                  }}>
+                    <div style={{ color: 'var(--text-faint)', fontSize: 11, letterSpacing: 2, marginBottom: 8 }}>
+                      POSTERS · {(dateCols[k] || k).toUpperCase()}
+                    </div>
+                    {/* Column headers */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-faint)', letterSpacing: 1, marginBottom: 6, paddingBottom: 5, borderBottom: '1px solid var(--border)' }}>
+                      <span>SKU</span>
+                      <div style={{ display: 'flex', gap: 20 }}>
+                        <span>IN USE</span>
+                        <span>AVAIL</span>
+                      </div>
+                    </div>
+                    {posterItems.map(({ sku, avail, inUse }) => (
+                      <div key={sku} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 16, marginBottom: 5 }}>
+                        <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>{sku}</span>
+                        <div style={{ display: 'flex', gap: 20 }}>
+                          <span style={{ fontWeight: 700, fontSize: 15, color: inUse > 0 ? 'var(--blue)' : '#555', textAlign: 'right', minWidth: 28 }}>
+                            {inUse > 0 ? inUse : '—'}
+                          </span>
+                          <span style={{ fontWeight: 700, fontSize: 15, textAlign: 'right', minWidth: 28,
+                            color: avail > 0 ? 'var(--green)' : avail === 0 ? '#555' : 'var(--red)',
+                          }}>
+                            {avail === 0 ? '—' : avail}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{ borderTop: '1px solid var(--border)', marginTop: 6, paddingTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                      <span style={{ color: 'var(--text-dim)', fontSize: 13, fontWeight: 700 }}>TOTAL</span>
+                      <div style={{ display: 'flex', gap: 20 }}>
+                        <span style={{ color: 'var(--blue)', fontWeight: 700, fontSize: 16, minWidth: 28, textAlign: 'right' }}>
+                          {posterItems.reduce((a, r) => a + r.inUse, 0) || '—'}
+                        </span>
+                        <span style={{ color: posterTotal > 0 ? 'var(--green)' : '#555', fontWeight: 700, fontSize: 16, minWidth: 28, textAlign: 'right' }}>
+                          {posterTotal || '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </button>
+              </div>
             )
           })}
         </div>
