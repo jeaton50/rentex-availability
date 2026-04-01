@@ -79,11 +79,12 @@ export default function App() {
       result[dk] = skus.map(sku => {
         const rows  = posterRows.filter(r => r.sku === sku)
         const desc  = rows[0]?.desc || sku
+        const own   = rows.reduce((a, r) => a + (r.own || 0), 0)
         const avail = rows.reduce((a, r) => a + (r.effectiveAvail[dk] ?? 0), 0)
         const inUse = rows.reduce((a, r) => a + Math.max(0,
           (r.own || 0) - (r.locked || 0) - (r.insp || 0) - (r.repair || 0) - Math.max(0, r.avail[dk] ?? 0)
         ), 0)
-        return { sku, desc, avail, inUse }
+        return { sku, desc, own, avail, inUse }
       })
     }
     return result
@@ -230,19 +231,23 @@ export default function App() {
                     {/* Column headers */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-faint)', letterSpacing: 1, marginBottom: 6, paddingBottom: 5, borderBottom: '1px solid var(--border)' }}>
                       <span>SKU</span>
-                      <div style={{ display: 'flex', gap: 20 }}>
-                        <span>IN USE</span>
-                        <span>AVAIL</span>
+                      <div style={{ display: 'flex', gap: 16 }}>
+                        <span style={{ minWidth: 32, textAlign: 'right' }}>OWNED</span>
+                        <span style={{ minWidth: 32, textAlign: 'right' }}>IN USE</span>
+                        <span style={{ minWidth: 32, textAlign: 'right' }}>AVAIL</span>
                       </div>
                     </div>
-                    {posterItems.map(({ sku, avail, inUse }) => (
+                    {posterItems.map(({ sku, own, avail, inUse }) => (
                       <div key={sku} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 16, marginBottom: 5 }}>
                         <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>{sku}</span>
-                        <div style={{ display: 'flex', gap: 20 }}>
-                          <span style={{ fontWeight: 700, fontSize: 15, color: inUse > 0 ? 'var(--blue)' : '#555', textAlign: 'right', minWidth: 28 }}>
+                        <div style={{ display: 'flex', gap: 16 }}>
+                          <span style={{ fontWeight: 700, fontSize: 15, color: '#ccc', textAlign: 'right', minWidth: 32 }}>
+                            {own}
+                          </span>
+                          <span style={{ fontWeight: 700, fontSize: 15, color: inUse > 0 ? 'var(--blue)' : '#555', textAlign: 'right', minWidth: 32 }}>
                             {inUse > 0 ? inUse : '—'}
                           </span>
-                          <span style={{ fontWeight: 700, fontSize: 15, textAlign: 'right', minWidth: 28,
+                          <span style={{ fontWeight: 700, fontSize: 15, textAlign: 'right', minWidth: 32,
                             color: avail > 0 ? 'var(--green)' : avail === 0 ? '#555' : 'var(--red)',
                           }}>
                             {avail === 0 ? '—' : avail}
@@ -252,11 +257,14 @@ export default function App() {
                     ))}
                     <div style={{ borderTop: '1px solid var(--border)', marginTop: 6, paddingTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                       <span style={{ color: 'var(--text-dim)', fontSize: 13, fontWeight: 700 }}>TOTAL</span>
-                      <div style={{ display: 'flex', gap: 20 }}>
-                        <span style={{ color: 'var(--blue)', fontWeight: 700, fontSize: 16, minWidth: 28, textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: 16 }}>
+                        <span style={{ color: '#ccc', fontWeight: 700, fontSize: 16, minWidth: 32, textAlign: 'right' }}>
+                          {posterItems.reduce((a, r) => a + r.own, 0)}
+                        </span>
+                        <span style={{ color: 'var(--blue)', fontWeight: 700, fontSize: 16, minWidth: 32, textAlign: 'right' }}>
                           {posterItems.reduce((a, r) => a + r.inUse, 0) || '—'}
                         </span>
-                        <span style={{ color: posterTotal > 0 ? 'var(--green)' : '#555', fontWeight: 700, fontSize: 16, minWidth: 28, textAlign: 'right' }}>
+                        <span style={{ color: posterTotal > 0 ? 'var(--green)' : '#555', fontWeight: 700, fontSize: 16, minWidth: 32, textAlign: 'right' }}>
                           {posterTotal || '—'}
                         </span>
                       </div>
