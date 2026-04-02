@@ -18,13 +18,15 @@ export default function App() {
   const [selectedDates, setSelectedDates] = useState(new Set())
   const [inspToggles,   setInspToggles]   = useState({})
   const [activeTab,     setActiveTab]     = useState(0)
-  const [hoveredDate,   setHoveredDate]   = useState(null)
+  const [hoveredDate,      setHoveredDate]      = useState(null)
+  const [posterAdditions,  setPosterAdditions]  = useState({}) // key: `${sku}__${dateKey}`, value: qty
 
   // When a new file lands, reset everything and default-select first date
   const handleParsed = (result) => {
     setParsed(result)
     setSelectedDates(new Set([result.dateColKeys[0]]))
     setInspToggles({})
+    setPosterAdditions({})
     setActiveTab(0)
   }
 
@@ -79,16 +81,17 @@ export default function App() {
       result[dk] = skus.map(sku => {
         const rows  = posterRows.filter(r => r.sku === sku)
         const desc  = rows[0]?.desc || sku
-        const own   = rows.reduce((a, r) => a + (r.own || 0), 0)
-        const avail = rows.reduce((a, r) => a + (r.effectiveAvail[dk] ?? 0), 0)
-        const inUse = rows.reduce((a, r) => a + Math.max(0,
+        const own      = rows.reduce((a, r) => a + (r.own || 0), 0)
+        const added    = posterAdditions[`${sku}__${dk}`] || 0
+        const avail    = rows.reduce((a, r) => a + (r.effectiveAvail[dk] ?? 0), 0) + added
+        const inUse    = rows.reduce((a, r) => a + Math.max(0,
           (r.own || 0) - (r.locked || 0) - (r.insp || 0) - (r.repair || 0) - Math.max(0, r.avail[dk] ?? 0)
         ), 0)
-        return { sku, desc, own, avail, inUse }
+        return { sku, desc, own, avail, inUse, added }
       })
     }
     return result
-  }, [effectiveRows, parsed])
+  }, [effectiveRows, parsed, posterAdditions])
 
   // ── helpers ───────────────────────────────────────────────────────────────
   const toggleDate = (k) => {
@@ -323,6 +326,10 @@ export default function App() {
             rows={parsed.rows}
             inspToggles={inspToggles}
             setInspToggles={setInspToggles}
+            posterAdditions={posterAdditions}
+            setPosterAdditions={setPosterAdditions}
+            dateColKeys={parsed.dateColKeys}
+            dateCols={dateCols}
           />
         )}
         {activeTab === 3 && (
