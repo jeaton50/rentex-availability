@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { buildEffectiveRows, computePlansForDate, buildNetworkOverview } from './logic.js'
 import { MiniBtn } from './components.jsx'
+import { ACTUAL_INVENTORY } from './data.js'
 import UploadScreen   from './UploadScreen.jsx'
 import ShortagesTab   from './ShortagesTab.jsx'
 import NetworkTab     from './NetworkTab.jsx'
@@ -176,19 +177,49 @@ export default function App() {
   const totalShortages  = worstCasePlans.length
   const totalUnits      = worstCasePlans.reduce((a, p) => a + p.shortage, 0)
   const totalStillShort = worstCasePlans.reduce((a, p) => a + p.stillShort, 0)
-  const totalOwned      = parsed.rows.reduce((a, r) => a + (r.own        || 0), 0)
   const totalInsp       = parsed.rows.reduce((a, r) => a + (r.insp       || 0), 0)
   const totalRepair     = parsed.rows.reduce((a, r) => a + (r.repair     || 0), 0)
   const totalLocked     = parsed.rows.reduce((a, r) => a + (r.locked     || 0), 0)
   const totalQuarantined= parsed.rows.reduce((a, r) => a + (r.quarantined|| 0), 0)
   const totalLateReturn = parsed.rows.reduce((a, r) => a + (r.lateReturn || 0), 0)
   const totalLocations  = new Set(parsed.rows.map(r => r.loc)).size
-  const totalRentableCleared = parsed.rows.reduce((a, r) => a + Math.max(0, r.own - (r.locked || 0)), 0)
   const firstDate       = dateColKeys[0]
   const totalBooked     = parsed.rows.reduce((a, r) => {
     const avail = r.avail[firstDate] ?? 0
     return a + Math.max(0, r.own - (r.locked || 0) - (r.insp || 0) - (r.repair || 0) - Math.max(0, avail))
   }, 0)
+
+  // ── Actual inventory vs RTPro per tracked SKU ──────────────────────────
+  const inventoryRows = Object.entries(ACTUAL_INVENTORY).map(([sku, actual]) => {
+    // Sum RTPro reported own across all locations for this SKU
+    const rtpro = parsed.rows
+      .filter(r => r.sku.toUpperCase() === sku.toUpperCase())
+      .reduce((a, r) => a + (r.own || 0), 0)
+    const diff = actual - rtpro
+    return { sku, actual, rtpro, diff }
+  })
+  // Total Owned = sum of actual for tracked SKUs + RTPro total for everything else
+  const trackedSkus = new Set(Object.keys(ACTUAL_INVENTORY).map(s => s.toUpperCase()))
+  const untrackedOwned = parsed.rows
+    .filter(r => !trackedSkus.has(r.sku.toUpperCase()))
+    .reduce((a, r) => a + (r.own || 0), 0)
+  const actualTrackedTotal = Object.values(ACTUAL_INVENTORY).reduce((a, v) => a + v, 0)
+  const totalOwned = actualTrackedTotal + untrackedOwned
+  // Open If Cleared: for tracked SKUs use actual total, for others use RTPro
+  const totalRentableCleared = (() => {
+    // Tracked SKUs: actual owned - total locked for that SKU across all locations
+    const trackedTotal = inventoryRows.reduce((sum, { sku, actual }) => {
+      const totalLocked = parsed.rows
+        .filter(r => r.sku.toUpperCase() === sku.toUpperCase())
+        .reduce((a, r) => a + (r.locked || 0), 0)
+      return sum + Math.max(0, actual - totalLocked)
+    }, 0)
+    // Untracked SKUs: RTPro own - locked per row
+    const untrackedTotal = parsed.rows
+      .filter(r => !trackedSkus.has(r.sku.toUpperCase()))
+      .reduce((a, r) => a + Math.max(0, r.own - (r.locked || 0)), 0)
+    return trackedTotal + untrackedTotal
+  })()
 
   return (
     <div style={{ fontFamily: 'var(--mono)', background: 'var(--bg)', minHeight: '100vh', color: 'var(--text)' }}>
@@ -255,6 +286,69 @@ export default function App() {
               </span>
             </div>
           ))}
+        </div>
+
+        {/* Actual Inventory panel */}
+        <div style={{ marginTop: 16, borderTop: '1px solid #ffffff0d', paddingTop: 14 }}>
+          <div style={{ color: 'var(--text-faint)', fontSize: 11, letterSpacing: 2, marginBottom: 10 }}>
+            ACTUAL INVENTORY
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {inventoryRows.map(({ sku, actual, rtpro, diff }) => {
+              const diffColor = diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red)' : 'var(--text-faint)'
+              const hasData   = rtpro > 0
+              return (
+                <div key={sku} style={{
+                  background: '#0c0c18', border: '1px solid #2a2a40',
+                  borderRadius: 5, padding: '10px 14px',
+                  display: 'flex', alignItems: 'center', gap: 14,
+                }}>
+                  {/* SKU */}
+                  <span style={{ color: 'var(--yellow)', fontWeight: 700, fontSize: 13, letterSpacing: 1 }}>
+                    {sku}
+                  </span>
+
+                  {/* Actual */}
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, lineHeight: 1, fontFamily: 'var(--display)' }}>
+                      {actual}
+                    </div>
+                    <div style={{ color: 'var(--text-faint)', fontSize: 10, letterSpacing: 1 }}>ACTUAL</div>
+                  </div>
+
+                  {/* RTPro reported */}
+                  {hasData && (
+                    <>
+                      <div style={{ color: '#333', fontSize: 16 }}>vs</div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ color: 'var(--text-dim)', fontSize: 22, fontWeight: 700, lineHeight: 1, fontFamily: 'var(--display)' }}>
+                          {rtpro}
+                        </div>
+                        <div style={{ color: 'var(--text-faint)', fontSize: 10, letterSpacing: 1 }}>RTPRO</div>
+                      </div>
+
+                      {/* Variance */}
+                      <div style={{
+                        background: diff === 0 ? 'transparent' : diff > 0 ? '#0a1a0a' : '#1a0808',
+                        border: `1px solid ${diff === 0 ? '#333' : diff > 0 ? '#1a4a1a' : '#4a1a1a'}`,
+                        borderRadius: 4, padding: '4px 10px', textAlign: 'center',
+                      }}>
+                        <div style={{ color: diffColor, fontSize: 16, fontWeight: 700, fontFamily: 'var(--display)' }}>
+                          {diff > 0 ? `+${diff}` : diff}
+                        </div>
+                        <div style={{ color: 'var(--text-faint)', fontSize: 10, letterSpacing: 1 }}>DIFF</div>
+                      </div>
+                    </>
+                  )}
+                  {!hasData && (
+                    <span style={{ color: 'var(--text-faint)', fontSize: 12, fontStyle: 'italic' }}>
+                      not in file
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       </header>
 
