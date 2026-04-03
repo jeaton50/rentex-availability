@@ -198,28 +198,9 @@ export default function App() {
     const diff = actual - rtpro
     return { sku, actual, rtpro, diff }
   })
-  // Total Owned = sum of actual for tracked SKUs + RTPro total for everything else
-  const trackedSkus = new Set(Object.keys(ACTUAL_INVENTORY).map(s => s.toUpperCase()))
-  const untrackedOwned = parsed.rows
-    .filter(r => !trackedSkus.has(r.sku.toUpperCase()))
-    .reduce((a, r) => a + (r.own || 0), 0)
-  const actualTrackedTotal = Object.values(ACTUAL_INVENTORY).reduce((a, v) => a + v, 0)
-  const totalOwned = actualTrackedTotal + untrackedOwned
-  // Open If Cleared: for tracked SKUs use actual total, for others use RTPro
-  const totalRentableCleared = (() => {
-    // Tracked SKUs: actual owned - total locked for that SKU across all locations
-    const trackedTotal = inventoryRows.reduce((sum, { sku, actual }) => {
-      const totalLocked = parsed.rows
-        .filter(r => r.sku.toUpperCase() === sku.toUpperCase())
-        .reduce((a, r) => a + (r.locked || 0), 0)
-      return sum + Math.max(0, actual - totalLocked)
-    }, 0)
-    // Untracked SKUs: RTPro own - locked per row
-    const untrackedTotal = parsed.rows
-      .filter(r => !trackedSkus.has(r.sku.toUpperCase()))
-      .reduce((a, r) => a + Math.max(0, r.own - (r.locked || 0)), 0)
-    return trackedTotal + untrackedTotal
-  })()
+  // Total Owned and Open If Cleared stay RTPro-based so all stats are consistent
+  const totalOwned           = parsed.rows.reduce((a, r) => a + (r.own || 0), 0)
+  const totalRentableCleared = parsed.rows.reduce((a, r) => a + Math.max(0, r.own - (r.locked || 0)), 0)
 
   return (
     <div style={{ fontFamily: 'var(--mono)', background: 'var(--bg)', minHeight: '100vh', color: 'var(--text)' }}>
