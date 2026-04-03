@@ -8,8 +8,9 @@ import InspectionTab  from './InspectionTab.jsx'
 import LocationsTab   from './LocationsTab.jsx'
 import OrdersTab      from './OrdersTab.jsx'
 
-const RTPRO_TABS  = ['Shortages & Transfers', 'Network Overview', 'Inspection', 'Locations']
-const ORDERS_TABS = ['Orders & Bookings']
+const RTPRO_TABS     = ['Shortages & Transfers', 'Network Overview', 'Inspection', 'Locations']
+const COMBINED_TABS  = ['Shortages & Transfers', 'Network Overview', 'Inspection', 'Locations', 'Orders & Bookings']
+const ORDERS_TABS    = ['Orders & Bookings']
 
 export default function App() {
   // ── file / parse state ────────────────────────────────────────────────────
@@ -34,18 +35,20 @@ export default function App() {
     setActiveTab(0)
   }
 
-  // ── derived state (only runs when we have RTPro data) ────────────────────
+  // ── derived state (only runs when we have RTPro or combined data) ─────────
+  const isRTProMode = parsed && (parsed.format === 'rtpro' || parsed.format === 'combined')
+
   const effectiveRows = useMemo(() => {
-    if (!parsed || parsed.format !== 'rtpro') return []
+    if (!isRTProMode) return []
     return buildEffectiveRows(parsed.rows, inspToggles, parsed.dateColKeys)
-  }, [parsed, inspToggles])
+  }, [parsed, inspToggles, isRTProMode])
 
   const allPlans = useMemo(() => {
-    if (!parsed || parsed.format !== 'rtpro') return {}
+    if (!isRTProMode) return {}
     const result = {}
     for (const dk of selectedDates) result[dk] = computePlansForDate(effectiveRows, dk)
     return result
-  }, [effectiveRows, selectedDates, parsed])
+  }, [effectiveRows, selectedDates, parsed, isRTProMode])
 
   const worstCasePlans = useMemo(() => {
     const map = {}
@@ -59,7 +62,7 @@ export default function App() {
   }, [allPlans])
 
   const sortedSelectedDates = useMemo(() => {
-    if (!parsed) return []
+    if (!parsed || !parsed.dateColKeys) return []
     return [...selectedDates].sort((a, b) => parsed.dateColKeys.indexOf(a) - parsed.dateColKeys.indexOf(b))
   }, [selectedDates, parsed])
 
@@ -71,13 +74,13 @@ export default function App() {
   )
 
   const networkOverview = useMemo(() => {
-    if (!parsed || parsed.format !== 'rtpro') return []
+    if (!isRTProMode) return []
     return buildNetworkOverview(effectiveRows, allPlans, selectedDates)
-  }, [effectiveRows, allPlans, selectedDates, parsed])
+  }, [effectiveRows, allPlans, selectedDates, parsed, isRTProMode])
 
   // poster breakdown per date: { [dateKey]: [{ sku, desc, avail }] }
   const posterByDate = useMemo(() => {
-    if (!parsed || parsed.format !== 'rtpro') return {}
+    if (!isRTProMode) return {}
     const posterRows = effectiveRows.filter(r => r.desc.toLowerCase().includes('poster'))
     const skus = [...new Set(posterRows.map(r => r.sku))]
     const result = {}
@@ -203,15 +206,24 @@ export default function App() {
           <span style={{ color: '#444' }}>//</span>
           <span style={{ color: 'var(--text-dim)', fontSize: 16, letterSpacing: 2 }}>Transfer Analyzer</span>
 
-          {/* File badge + swap button */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
+          {/* File badge(s) + swap button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto', flexWrap: 'wrap' }}>
             <span style={{
-              background: '#1a2a1a', color: 'var(--green)',
-              border: '1px solid #2a3a2a', padding: '4px 12px',
+              background: '#1a1a2a', color: 'var(--accent)',
+              border: '1px solid #2a2a3a', padding: '4px 12px',
               borderRadius: 4, fontSize: 13, letterSpacing: 1,
             }}>
               📄 {fileName}
             </span>
+            {parsed.format === 'combined' && (
+              <span style={{
+                background: '#1a2a1a', color: 'var(--green)',
+                border: '1px solid #2a3a2a', padding: '4px 12px',
+                borderRadius: 4, fontSize: 13, letterSpacing: 1,
+              }}>
+                📋 {parsed.orders.length} orders
+              </span>
+            )}
             <MiniBtn onClick={() => setParsed(null)} color="#888">
               ↑ New File
             </MiniBtn>
@@ -351,7 +363,7 @@ export default function App() {
 
       {/* ── TABS ── */}
       <nav style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--bg3)' }}>
-        {RTPRO_TABS.map((t, i) => (
+        {(parsed.format === 'combined' ? COMBINED_TABS : RTPRO_TABS).map((t, i) => (
           <button key={t} onClick={() => setActiveTab(i)} style={{
             padding: '14px 24px', fontSize: 14, letterSpacing: 2,
             cursor: 'pointer', fontFamily: 'var(--mono)',
@@ -401,6 +413,12 @@ export default function App() {
             firstDate={firstDate}
           />
         )}
+        {activeTab === 4 && parsed.format === 'combined' && (
+          <OrdersTab
+            orders={parsed.orders}
+            dateCols={parsed.orderDateCols}
+          />
+        )}
       </main>
 
       <footer style={{
@@ -409,7 +427,10 @@ export default function App() {
         display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
       }}>
         <span>RENTEX TRANSFER ANALYZER</span>
-        <span>{parsed.rows.length} rows · {dateColKeys.length} date windows</span>
+        <span>
+          {parsed.rows.length} rows · {dateColKeys.length} date windows
+          {parsed.format === 'combined' && ` · ${parsed.orders.length} orders`}
+        </span>
       </footer>
     </div>
   )
