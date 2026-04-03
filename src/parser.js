@@ -123,7 +123,7 @@ export function parseRTProFile(file) {
           return
         }
 
-        resolve({ rows, dateCols, dateColKeys, fileName: file.name, error: null })
+        resolve({ format: 'rtpro', rows, dateCols, dateColKeys, fileName: file.name, error: null })
       } catch (err) {
         resolve({ error: `Parse error: ${err.message}` })
       }
@@ -137,4 +137,125 @@ function toInt(val) {
   if (val === null || val === undefined || val === '') return 0
   const n = Number(val)
   return isNaN(n) ? 0 : Math.round(n)
+}
+
+function excelSerial(val) {
+  if (!val || isNaN(Number(val))) return null
+  const d = new Date(Math.round((Number(val) - 25569) * 86400 * 1000))
+  return d.toISOString().slice(0, 10)
+}
+
+function fmtDate(iso) {
+  if (!iso) return ''
+  const [, m, d] = iso.split('-')
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  return `${months[parseInt(m,10)-1]} ${parseInt(d,10)}`
+}
+
+/**
+ * Parse an Equipment Availability Data Update .xlsx (orders/bookings format).
+ * Headers: Order, Job Title, Customer Title, Rental Agent, Equipment,
+ *          Order Type, Qty Ord, Location, Start Date, End Date,
+ *          Usage Begin Date, Usage End Date, Pull Date, Ship Date, Return Date
+ *
+ * Returns: { format:'orders', orders, dateCols, fileName, error }
+ */
+export function parseOrdersFile(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result)
+        const wb   = XLSX.read(data, { type: 'array', cellDates: false })
+        const ws   = wb.Sheets[wb.SheetNames[0]]
+        const raw  = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null })
+
+        // Find header row containing "Order" and "Qty Ord"
+        let headerIdx = -1
+        for (let i = 0; i < Math.min(5, raw.length); i++) {
+          const row = raw[i]
+          if (row &&
+              row.some(c => typeof c === 'string' && c.trim().toLowerCase() === 'order') &&
+              row.some(c => typeof c === 'string' && c.trim().toLowerCase() === 'qty ord')) {
+            headerIdx = i; break
+          }
+        }
+        if (headerIdx === -1) {
+          resolve({ error: 'Not recognized as an orders file (expected Order / Qty Ord columns).' })
+          return
+        }
+
+        const headers = raw[headerIdx].map(h => (h ? String(h).trim() : ''))
+        const ci = {
+          order:      headers.findIndex(h => h.toLowerCase() === 'order'),
+          jobTitle:   headers.findIndex(h => h.toLowerCase() === 'job title'),
+          customer:   headers.findIndex(h => h.toLowerCase() === 'customer title'),
+          agent:      headers.findIndex(h => h.toLowerCase() === 'rental agent'),
+          sku:        headers.findIndex(h => h.toLowerCase() === 'equipment'),
+          orderType:  headers.findIndex(h => h.toLowerCase() === 'order type'),
+          qty:        headers.findIndex(h => h.toLowerCase() === 'qty ord'),
+          loc:        headers.findIndex(h => h.toLowerCase() === 'location'),
+          startDate:  headers.findIndex(h => h.toLowerCase() === 'start date'),
+          endDate:    headers.findIndex(h => h.toLowerCase() === 'end date'),
+          usageBegin: headers.findIndex(h => h.toLowerCase() === 'usage begin date'),
+          usageEnd:   headers.findIndex(h => h.toLowerCase() === 'usage end date'),
+          pullDate:   headers.findIndex(h => h.toLowerCase() === 'pull date'),
+          shipDate:   headers.findIndex(h => h.toLowerCase() === 'ship date'),
+          returnDate: headers.findIndex(h => h.toLowerCase() === 'return date'),
+        }
+
+        const orders = []
+        for (let ri = headerIdx + 1; ri < raw.length; ri++) {
+          const row = raw[ri]
+          if (!row || !row[ci.sku]) continue
+          const sku = String(row[ci.sku]).trim().toUpperCase()
+          if (!sku) continue
+          orders.push({
+            orderNum:   row[ci.order],
+            jobTitle:   String(row[ci.jobTitle]  || '').trim(),
+            customer:   String(row[ci.customer]  || '').trim(),
+            agent:      String(row[ci.agent]     || '').trim(),
+            sku,
+            orderType:  String(row[ci.orderType] || '').trim(),
+            qty:        Number(row[ci.qty]) || 0,
+            loc:        String(row[ci.loc]  || '').trim().toUpperCase(),
+            startDate:  excelSerial(row[ci.startDate]),
+            endDate:    excelSerial(row[ci.endDate]),
+            usageBegin: excelSerial(row[ci.usageBegin]),
+            usageEnd:   excelSerial(row[ci.usageEnd]),
+            pullDate:   excelSerial(row[ci.pullDate]),
+            shipDate:   excelSerial(row[ci.shipDate]),
+            returnDate: excelSerial(row[ci.returnDate]),
+          })
+        }
+
+        if (orders.length === 0) {
+          resolve({ error: 'No order rows found in file.' })
+          return
+        }
+
+        // Build date list: every date between min pull and max return
+        const allDates = new Set()
+        orders.forEach(o => { if (o.pullDate) allDates.add(o.pullDate) })
+        orders.forEach(o => { if (o.returnDate) allDates.add(o.returnDate) })
+        const dateCols = [...allDates].sort().map(iso => ({ iso, label: fmtDate(iso) }))
+
+        resolve({ format: 'orders', orders, dateCols, fileName: file.name, error: null })
+      } catch (err) {
+        resolve({ error: `Parse error: ${err.message}` })
+      }
+    }
+    reader.onerror = () => resolve({ error: 'Could not read file.' })
+    reader.readAsArrayBuffer(file)
+  })
+}
+
+/** Try RTPro first, then orders format. */
+export async function detectAndParseFile(file) {
+  const rtpro = await parseRTProFile(file)
+  if (!rtpro.error) return rtpro
+  const orders = await parseOrdersFile(file)
+  if (!orders.error) return orders
+  // Return the RTPro error as it's more descriptive for the common case
+  return rtpro
 }
