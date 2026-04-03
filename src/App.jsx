@@ -6,13 +6,15 @@ import ShortagesTab   from './ShortagesTab.jsx'
 import NetworkTab     from './NetworkTab.jsx'
 import InspectionTab  from './InspectionTab.jsx'
 import LocationsTab   from './LocationsTab.jsx'
+import OrdersTab      from './OrdersTab.jsx'
 
-const TABS = ['Shortages & Transfers', 'Network Overview', 'Inspection', 'Locations']
+const RTPRO_TABS  = ['Shortages & Transfers', 'Network Overview', 'Inspection', 'Locations']
+const ORDERS_TABS = ['Orders & Bookings']
 
 export default function App() {
   // ── file / parse state ────────────────────────────────────────────────────
   const [parsed, setParsed] = useState(null)
-  // parsed = { rows, dateCols, dateColKeys, fileName }
+  // parsed = { format, rows?, dateCols, dateColKeys?, orders?, fileName }
 
   // ── analyzer state ────────────────────────────────────────────────────────
   const [selectedDates, setSelectedDates] = useState(new Set())
@@ -24,20 +26,22 @@ export default function App() {
   // When a new file lands, reset everything and default-select first date
   const handleParsed = (result) => {
     setParsed(result)
-    setSelectedDates(new Set([result.dateColKeys[0]]))
+    if (result.format === 'rtpro') {
+      setSelectedDates(new Set([result.dateColKeys[0]]))
+    }
     setInspToggles({})
     setPosterAdditions({})
     setActiveTab(0)
   }
 
-  // ── derived state (only runs when we have data) ───────────────────────────
+  // ── derived state (only runs when we have RTPro data) ────────────────────
   const effectiveRows = useMemo(() => {
-    if (!parsed) return []
+    if (!parsed || parsed.format !== 'rtpro') return []
     return buildEffectiveRows(parsed.rows, inspToggles, parsed.dateColKeys)
   }, [parsed, inspToggles])
 
   const allPlans = useMemo(() => {
-    if (!parsed) return {}
+    if (!parsed || parsed.format !== 'rtpro') return {}
     const result = {}
     for (const dk of selectedDates) result[dk] = computePlansForDate(effectiveRows, dk)
     return result
@@ -67,13 +71,13 @@ export default function App() {
   )
 
   const networkOverview = useMemo(() => {
-    if (!parsed) return []
+    if (!parsed || parsed.format !== 'rtpro') return []
     return buildNetworkOverview(effectiveRows, allPlans, selectedDates)
   }, [effectiveRows, allPlans, selectedDates, parsed])
 
   // poster breakdown per date: { [dateKey]: [{ sku, desc, avail }] }
   const posterByDate = useMemo(() => {
-    if (!parsed) return {}
+    if (!parsed || parsed.format !== 'rtpro') return {}
     const posterRows = effectiveRows.filter(r => r.desc.toLowerCase().includes('poster'))
     const skus = [...new Set(posterRows.map(r => r.sku))]
     const result = {}
@@ -105,6 +109,65 @@ export default function App() {
 
   // ── show upload screen if no file loaded ──────────────────────────────────
   if (!parsed) return <UploadScreen onParsed={handleParsed} />
+
+  // ── orders format: simplified layout ─────────────────────────────────────
+  if (parsed.format === 'orders') {
+    return (
+      <div style={{ fontFamily: 'var(--mono)', background: 'var(--bg)', minHeight: '100vh', color: 'var(--text)' }}>
+        <header style={{
+          background: 'linear-gradient(135deg, #0d1117, #161b22)',
+          borderBottom: '1px solid #4db6ff40',
+          padding: '18px 28px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--display)', color: 'var(--accent)', fontSize: 26, fontWeight: 800, letterSpacing: 3 }}>
+              RENTEX
+            </span>
+            <span style={{ color: '#444' }}>//</span>
+            <span style={{ color: 'var(--text-dim)', fontSize: 16, letterSpacing: 2 }}>Orders & Bookings</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
+              <span style={{
+                background: '#1a2a1a', color: 'var(--green)',
+                border: '1px solid #2a3a2a', padding: '4px 12px',
+                borderRadius: 4, fontSize: 13, letterSpacing: 1,
+              }}>
+                📄 {parsed.fileName}
+              </span>
+              <MiniBtn onClick={() => setParsed(null)} color="#888">↑ New File</MiniBtn>
+            </div>
+          </div>
+        </header>
+
+        <nav style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--bg3)' }}>
+          {ORDERS_TABS.map((t, i) => (
+            <button key={t} onClick={() => setActiveTab(i)} style={{
+              padding: '14px 24px', fontSize: 14, letterSpacing: 2,
+              cursor: 'pointer', fontFamily: 'var(--mono)',
+              background: 'transparent', border: 'none', fontWeight: activeTab === i ? 700 : 400,
+              borderBottom: `3px solid ${activeTab === i ? 'var(--blue)' : 'transparent'}`,
+              color: activeTab === i ? 'var(--blue)' : 'var(--text-dim)',
+              transition: 'all 0.12s',
+            }}>
+              {t.toUpperCase()}
+            </button>
+          ))}
+        </nav>
+
+        <main style={{ padding: '28px 32px', maxWidth: 1200 }}>
+          <OrdersTab orders={parsed.orders} dateCols={parsed.dateCols} />
+        </main>
+
+        <footer style={{
+          padding: '16px 28px', borderTop: '1px solid var(--border)',
+          color: 'var(--text-faint)', fontSize: 13, letterSpacing: 1,
+          display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
+        }}>
+          <span>RENTEX TRANSFER ANALYZER</span>
+          <span>{parsed.orders.length} orders · {parsed.dateCols.length} date windows</span>
+        </footer>
+      </div>
+    )
+  }
 
   const { dateCols, dateColKeys, fileName } = parsed
   const totalShortages  = worstCasePlans.length
@@ -288,7 +351,7 @@ export default function App() {
 
       {/* ── TABS ── */}
       <nav style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--bg3)' }}>
-        {TABS.map((t, i) => (
+        {RTPRO_TABS.map((t, i) => (
           <button key={t} onClick={() => setActiveTab(i)} style={{
             padding: '14px 24px', fontSize: 14, letterSpacing: 2,
             cursor: 'pointer', fontFamily: 'var(--mono)',
