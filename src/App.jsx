@@ -85,7 +85,7 @@ export default function App() {
         const added    = posterAdditions[`${sku}__${dk}`] || 0
         const avail    = rows.reduce((a, r) => a + (r.effectiveAvail[dk] ?? 0), 0) + added
         const inUse    = rows.reduce((a, r) => a + Math.max(0,
-          (r.own || 0) - (r.locked || 0) - (r.insp || 0) - (r.repair || 0) - Math.max(0, r.avail[dk] ?? 0)
+          (r.own || 0) - (r.locked || 0) - (r.insp || 0) - (r.repair || 0) - (r.quarantined || 0) - Math.max(0, r.avail[dk] ?? 0)
         ), 0)
         return { sku, desc, own, avail, inUse, added }
       })

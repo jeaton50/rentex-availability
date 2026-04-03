@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { LocBadge, thStyle, tdStyle } from './components.jsx'
 
 export default function InspectionTab({ rows, inspToggles, setInspToggles, posterAdditions, setPosterAdditions, dateColKeys, dateCols }) {
-  const inspItems = rows.filter(r => r.insp > 0 || r.locked > 0 || r.repair > 0)
+  const inspItems = rows.filter(r => r.insp > 0 || r.locked > 0 || r.repair > 0 || r.quarantined > 0)
   const anyOn     = Object.values(inspToggles).some(Boolean)
 
-  const totalInsp   = inspItems.reduce((a, r) => a + r.insp,   0)
-  const totalRepair = inspItems.reduce((a, r) => a + r.repair, 0)
-  const totalLocked = inspItems.reduce((a, r) => a + r.locked, 0)
+  const totalInsp        = inspItems.reduce((a, r) => a + (r.insp        || 0), 0)
+  const totalRepair      = inspItems.reduce((a, r) => a + (r.repair      || 0), 0)
+  const totalLocked      = inspItems.reduce((a, r) => a + (r.locked      || 0), 0)
+  const totalQuarantined = inspItems.reduce((a, r) => a + (r.quarantined || 0), 0)
 
   // poster SKUs for the additions UI
   const posterSkus = [...new Set(rows.filter(r => r.desc.toLowerCase().includes('poster')).map(r => r.sku))].sort()
@@ -50,9 +51,10 @@ export default function InspectionTab({ rows, inspToggles, setInspToggles, poste
       {/* Summary counts */}
       <div style={{ display: 'flex', gap: 28, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'In Inspection', value: totalInsp,   color: 'var(--yellow)' },
-          { label: 'In Repair',     value: totalRepair, color: 'var(--red)'    },
-          { label: 'Locked Attach', value: totalLocked, color: 'var(--orange)' },
+          { label: 'In Inspection', value: totalInsp,        color: 'var(--yellow)' },
+          { label: 'In Repair',     value: totalRepair,      color: 'var(--red)'    },
+          { label: 'Quarantined',   value: totalQuarantined, color: '#bb66ff'       },
+          { label: 'Locked Attach', value: totalLocked,      color: 'var(--orange)' },
         ].map(s => (
           <div key={s.label} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ color: s.color, fontSize: 28, fontWeight: 700, lineHeight: 1, fontFamily: 'var(--display)' }}>
@@ -73,7 +75,7 @@ export default function InspectionTab({ rows, inspToggles, setInspToggles, poste
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['SKU', 'Description', 'Location', 'In Inspection', 'In Repair', 'Locked Attach.', 'Include?'].map(h => (
+                  {['SKU', 'Description', 'Location', 'In Inspection', 'In Repair', 'Quarantined', 'Locked Attach.', 'Include?'].map(h => (
                     <th key={h} style={thStyle}>{h}</th>
                   ))}
                 </tr>
@@ -87,11 +89,12 @@ export default function InspectionTab({ rows, inspToggles, setInspToggles, poste
                       <td style={{ ...tdStyle, color: 'var(--yellow)', fontWeight: 700 }}>{r.sku}</td>
                       <td style={{ ...tdStyle, color: 'var(--text-dim)' }}>{r.desc}</td>
                       <td style={tdStyle}><LocBadge loc={r.loc} /></td>
-                      <td style={{ ...tdStyle, color: 'var(--yellow)', textAlign: 'center' }}>{r.insp   > 0 ? r.insp   : '—'}</td>
-                      <td style={{ ...tdStyle, color: 'var(--red)',    textAlign: 'center' }}>{r.repair > 0 ? r.repair : '—'}</td>
-                      <td style={{ ...tdStyle, color: 'var(--orange)', textAlign: 'center' }}>{r.locked > 0 ? r.locked : '—'}</td>
+                      <td style={{ ...tdStyle, color: 'var(--yellow)', textAlign: 'center' }}>{r.insp        > 0 ? r.insp        : '—'}</td>
+                      <td style={{ ...tdStyle, color: 'var(--red)',    textAlign: 'center' }}>{r.repair      > 0 ? r.repair      : '—'}</td>
+                      <td style={{ ...tdStyle, color: '#bb66ff',       textAlign: 'center' }}>{r.quarantined > 0 ? r.quarantined : '—'}</td>
+                      <td style={{ ...tdStyle, color: 'var(--orange)', textAlign: 'center' }}>{r.locked      > 0 ? r.locked      : '—'}</td>
                       <td style={tdStyle}>
-                        {(r.insp > 0 || r.repair > 0) ? (
+                        {(r.insp > 0 || r.repair > 0 || r.quarantined > 0) ? (
                           <button
                             onClick={() => setInspToggles(p => ({ ...p, [key]: !p[key] }))}
                             style={{
@@ -129,7 +132,7 @@ export default function InspectionTab({ rows, inspToggles, setInspToggles, poste
                 <div key={`${r.sku}_${r.loc}`} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6, fontSize: 14 }}>
                   <span style={{ color: 'var(--green)', fontWeight: 700 }}>{r.sku}</span>
                   <LocBadge loc={r.loc} />
-                  <span style={{ color: 'var(--text-dim)' }}>+{(r.insp || 0) + (r.repair || 0)} units added across all date windows</span>
+                  <span style={{ color: 'var(--text-dim)' }}>+{(r.insp || 0) + (r.repair || 0) + (r.quarantined || 0)} units added across all date windows</span>
                 </div>
               ))}
             </div>
