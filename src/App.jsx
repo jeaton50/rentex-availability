@@ -8,10 +8,11 @@ import NetworkTab     from './NetworkTab.jsx'
 import InspectionTab  from './InspectionTab.jsx'
 import LocationsTab   from './LocationsTab.jsx'
 import OrdersTab      from './OrdersTab.jsx'
+import HelpTab        from './HelpTab.jsx'
 
-const RTPRO_TABS     = ['Shortages & Transfers', 'Network Overview', 'Inspection', 'Locations']
-const COMBINED_TABS  = ['Shortages & Transfers', 'Network Overview', 'Inspection', 'Locations', 'Orders & Bookings']
-const ORDERS_TABS    = ['Orders & Bookings']
+const RTPRO_TABS     = ['Shortages & Transfers', 'Network Overview', 'Inspection', 'Locations', 'How To Use']
+const COMBINED_TABS  = ['Shortages & Transfers', 'Network Overview', 'Inspection', 'Locations', 'Orders & Bookings', 'How To Use']
+const ORDERS_TABS    = ['Orders & Bookings', 'How To Use']
 
 export default function App() {
   // ── file / parse state ────────────────────────────────────────────────────
@@ -158,7 +159,8 @@ export default function App() {
         </nav>
 
         <main style={{ padding: '28px 32px', maxWidth: 1200 }}>
-          <OrdersTab orders={parsed.orders} dateCols={parsed.dateCols} />
+          {activeTab === 0 && <OrdersTab orders={parsed.orders} dateCols={parsed.dateCols} />}
+          {activeTab === 1 && <HelpTab />}
         </main>
 
         <footer style={{
@@ -494,6 +496,8 @@ export default function App() {
             dateCols={parsed.orderDateCols}
           />
         )}
+        {(activeTab === 4 && parsed.format !== 'combined') && <HelpTab />}
+        {activeTab === 5 && parsed.format === 'combined' && <HelpTab />}
       </main>
 
       <footer style={{
